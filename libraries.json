@@ -1,0 +1,4 @@
+{
+  "stdlib.h": ["malloc()", "calloc()", "realloc()", "free()", "abs()", "div()", "abort()", "exit()", "system()", "atoi()", "atof()", "strtod()", "strtol()", "getenv()", "setenv()", "putenv()", "perror()", "rand()", "delay()"],
+  "stdio.h": ["fclose(FILE *stream)", "clearerr(FILE *stream)", "feof(FILE *stream)", "ferror(FILE *stream)", "fflush(FILE *stream)", "fgetpos(FILE *stream, fpos_t *pos)", "fopen(const char *filename, const char *mode)", "fread(void *ptr, size_t size, size_t nmemb, FILE *stream)", "freopen(const char *filename, const char *mode, FILE *stream)", "fseek(FILE *stream, long int offset, int whence)", "fsetpos(FILE *stream, const fpos_t *pos)"]
+}
