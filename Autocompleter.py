@@ -160,7 +160,6 @@ class MyDictionaryCompleter(QtWidgets.QCompleter):
     def changeCompletion(self, completion):
         if completion.find("(") != -1:
             completion = completion[:completion.find("(")]
-        print(completion)
         self.insertText.emit(completion)
 
     def addKeywords(self, keywords):
