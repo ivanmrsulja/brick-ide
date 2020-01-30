@@ -1,16 +1,10 @@
 import shutil
 
-from PyQt5 import QtWidgets, QtGui
-from PyQt5 import QtCore
-from PyQt5.QtCore import QFile, QRegExp, Qt
-from PyQt5.QtGui import QFont, QSyntaxHighlighter, QTextCharFormat, QIcon
-import sys
+from PyQt5.QtCore import Qt
 import os
-from PyQt5.QtWidgets import QFileSystemModel
-from syntax import Highlighter
 import qdarkstyle
-from Terminal import Terminal
-from Autocompleter import *
+from model.Terminal import Terminal
+from model.Autocompleter import *
 
 
 class TextEditor(QtWidgets.QWidget):
@@ -22,7 +16,7 @@ class TextEditor(QtWidgets.QWidget):
         self.init_ui()
 
     def init_ui(self):
-        self.setStyleSheet("QWidget { background-color: #2B2B2B }")
+        self.setStyleSheet("QWidget { background-color: #2B2B2B ; color: #A9B7C6}")
         self.init_text_edit()
 
         self.terminal = Terminal()
@@ -116,6 +110,8 @@ class TextEditor(QtWidgets.QWidget):
         base_path = self.open_path
         if self.tree.currentIndex().parent() != self.tree.rootIndex() or not "." in self.tree.currentIndex().data():
             base_path = self.get_path_for_making(self.open_path)
+            if "." in base_path:
+                base_path = os.path.split(base_path)[0]
 
         ret_text, ok_button = QtWidgets.QInputDialog.getText(self, "File name", "Insert file name: ")
         if ok_button:
@@ -144,7 +140,7 @@ class TextEditor(QtWidgets.QWidget):
         self.highlighter = Highlighter(self.text.document())
         self.text.textChanged.connect(self.save_locally)
 
-        with open("../Editor/local_data.txt", "r") as f:
+        with open("viewer/local_data.txt", "r") as f:
             lines = f.read()
             self.text.setPlainText(lines)
 
@@ -161,7 +157,7 @@ class TextEditor(QtWidgets.QWidget):
 
     def save_locally(self):
         text = self.text.toPlainText()
-        with open("../Editor/local_data.txt", "w") as f:
+        with open("viewer/local_data.txt", "w") as f:
             f.write(text)
 
     def save_file(self):
@@ -181,6 +177,8 @@ class TextEditor(QtWidgets.QWidget):
 
     def open_file(self):
         file_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Open directory")
+        if file_path == "":
+            return
         self.save_path = None
         if self.open_path is None:
             self.tree.setModel(self.model)
@@ -190,12 +188,14 @@ class TextEditor(QtWidgets.QWidget):
         self.write_path()
         self.tree.setRootIndex(self.model.index(self.open_path))
 
+        self.update_hints()
+
     def write_path(self):
-        with open("../Editor/temp.txt", "w") as f:
+        with open("viewer/temp.txt", "w") as f:
             f.write(self.open_path + "|" + str(self.save_path))
 
     def get_open_path(self):
-        with open("temp.txt", "r") as f:
+        with open("viewer/temp.txt", "r") as f:
             path = f.read()
         if path == "":
             return
@@ -244,3 +244,9 @@ class TextEditor(QtWidgets.QWidget):
                 text = file.read()
                 self.text.setPlainText(text)
             self.write_path()
+
+            self.update_hints()
+
+    def update_hints(self):
+        new_completer = check_for_header_files(self.text.toPlainText(), self.completer.my_keywords)
+        self.text.setCompleter(new_completer)

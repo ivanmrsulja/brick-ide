@@ -1,15 +1,5 @@
-from PyQt5 import QtWidgets, QtGui
-from PyQt5 import QtCore
-from PyQt5.QtCore import QFile, QRegExp, Qt
-from PyQt5.QtGui import QFont, QSyntaxHighlighter, QTextCharFormat, QIcon
-import sys
+from PyQt5 import QtWidgets
 import os
-from PyQt5.QtWidgets import QFileSystemModel
-from syntax import Highlighter
-from editor import TextEditor
-import qdarkstyle
-import PyQt5.Qsci
-from Terminal import Terminal
 
 clear = lambda: os.system("clear")
 

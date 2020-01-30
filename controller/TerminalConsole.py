@@ -18,8 +18,8 @@
 from PyQt5.QtWidgets import QTextEdit, QMessageBox
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QTextCursor
-from TerminalController import TerminalController
-from CommandHistoryStack import CommandHistoryStack
+from controller.TerminalController import TerminalController
+from structures.CommandHistoryStack import CommandHistoryStack
 import os
 import socket
 import getpass

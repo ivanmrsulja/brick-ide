@@ -17,7 +17,7 @@
 
 from PyQt5.QtWidgets import QDockWidget, QLabel
 from PyQt5.QtCore import Qt, pyqtSignal
-from TerminalConsole import TerminalConsole
+from controller.TerminalConsole import TerminalConsole
 
 
 class Terminal(QDockWidget):
