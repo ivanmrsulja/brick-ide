@@ -1,6 +1,7 @@
 """
     i386ide is lightweight IDE for i386 assembly and C programming language.
     Copyright (C) 2019  Dušan Erdeljan, Marko Njegomir
+    Redistributed by: Mrsulja Ivan
 
     This file is part of i386ide.
     This program is free software: you can redistribute it and/or modify
