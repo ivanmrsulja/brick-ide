@@ -159,6 +159,21 @@ class MainWindow(QtWidgets.QMainWindow):
         command = "ddd " + self.name
         os.system(command)
 
+    def closeEvent(self, event):
+        # do stuff
+        if self.form.safe_to_close():
+            event.accept()
+        else:
+            message = "You have unsaved changes in: "
+            for filename in self.form.get_unsaved_files():
+                message += filename + ", "
+            flags = QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+            button = QtWidgets.QMessageBox.question(self, "Exit without saving?",  message[0: -2] + ".", flags)
+
+            if (button == QtWidgets.QMessageBox.No):
+                event.ignore()
+            else:
+                event.accept()
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

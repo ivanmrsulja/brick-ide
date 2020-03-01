@@ -1,6 +1,6 @@
 import shutil
-
-from PyQt5.QtCore import Qt
+from model.SaveNode import *
+from PyQt5.QtCore import Qt, pyqtRemoveInputHook
 import os
 import qdarkstyle
 from model.Terminal import Terminal
@@ -13,11 +13,11 @@ class TextEditor(QtWidgets.QWidget):
         super(TextEditor, self).__init__()
         self.save_path = None
         self.open_path = None
+        self.local_data = {}
         self.init_ui()
 
     def init_ui(self):
         self.setStyleSheet("QWidget { background-color: #2B2B2B ; color: #A9B7C6}")
-        self.init_text_edit()
 
         self.terminal = Terminal()
 
@@ -36,6 +36,7 @@ class TextEditor(QtWidgets.QWidget):
         self.tree.setWindowTitle("Dir View")
         self.tree.doubleClicked.connect(self.tree_clk)
         self.get_open_path()
+        self.init_text_edit()
 
         self.grid = QtWidgets.QGridLayout()
         self.grid.addWidget(self.text, 0, 2, 4, 6)
@@ -144,6 +145,11 @@ class TextEditor(QtWidgets.QWidget):
             lines = f.read()
             self.text.setPlainText(lines)
 
+        if lines.strip() == "":
+            with open(self.save_path, "r") as f:
+                lines = f.read()
+                self.text.setPlainText(lines)
+
         new_completer = check_for_header_files(self.text.toPlainText(), self.completer.my_keywords)
         self.text.setCompleter(new_completer)
 
@@ -156,9 +162,20 @@ class TextEditor(QtWidgets.QWidget):
             self.text.setFont(self.font)
 
     def save_locally(self):
+        if self.save_path is None:
+            return
         text = self.text.toPlainText()
         with open("viewer/local_data.txt", "w") as f:
             f.write(text)
+        if self.save_path not in self.local_data.keys():
+            new_save = SaveNode(self.save_path)
+            new_save.data = text
+            self.local_data[self.save_path] = new_save
+        else:
+            if text != self.local_data[self.save_path].data:
+                self.local_data[self.save_path].data = text
+                self.local_data[self.save_path].saved = False
+        #print(self.local_data[self.save_path].data)
 
     def save_file(self):
         if self.save_path is None:
@@ -171,6 +188,7 @@ class TextEditor(QtWidgets.QWidget):
             with open(self.save_path, "w") as file:
                 text = self.text.toPlainText()
                 file.write(text)
+            self.local_data[self.save_path].saved = True
         except:
             QtWidgets.QMessageBox.information(self, "Error", "You can't save if you don't specify location!")
             self.save_path = None
@@ -240,13 +258,32 @@ class TextEditor(QtWidgets.QWidget):
                 base_path = self.get_path_for_making(self.open_path)
             self.save_path = base_path
 
-            with open(self.save_path, "r") as file:
-                text = file.read()
-                self.text.setPlainText(text)
-            self.write_path()
+            if self.save_path not in self.local_data.keys():
+                with open(self.save_path, "r") as file:
+                    text = file.read()
+                    new_save = SaveNode(self.save_path)
+                    new_save.data = text
+                    self.local_data[self.save_path] = new_save
+                    self.text.setPlainText(text)
+            else:
+                self.text.setPlainText(self.local_data[self.save_path].data)
 
+            self.write_path()
             self.update_hints()
 
     def update_hints(self):
         new_completer = check_for_header_files(self.text.toPlainText(), self.completer.my_keywords)
         self.text.setCompleter(new_completer)
+
+    def safe_to_close(self):
+        for file in self.local_data.values():
+            if not file.saved:
+                return False
+        return True
+
+    def get_unsaved_files(self):
+        for_ret = []
+        for path in self.local_data.keys():
+            if not self.local_data[path].saved:
+                for_ret.append(path.split("/")[-1])
+        return for_ret
