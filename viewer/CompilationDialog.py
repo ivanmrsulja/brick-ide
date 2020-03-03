@@ -1,3 +1,20 @@
+"""
+    Brick is lightweight IDE for C programming language.
+    Copyright (C) 2020 : Mršulja Ivan
+
+    This file is part of Brick IDE.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>
+"""
+
 from PyQt5 import QtWidgets
 import os
 
@@ -59,9 +76,11 @@ class CompilatonDialog(QtWidgets.QDialog):
         print(full_path)
         self.window.name = os.path.split(self.window.form.save_path)[1]
         command = "gcc -g " + full_path + " -o '" + self.window.name + "'"
-        print(command)
-        os.system(command)
-        self.window.status_label.setText("Compiled successfully !")
+        if self.window.form.terminal.executeCommand(command):
+            self.window.status_label.setText("Compiled successfully !")
+        else:
+            self.window.status_label.setText("Compilation terminated.")
+            self.window.name = None
         self.close()
 
 

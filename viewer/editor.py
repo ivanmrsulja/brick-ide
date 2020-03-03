@@ -1,10 +1,29 @@
+"""
+    Brick is lightweight IDE for C programming language.
+    Copyright (C) 2020 : Mršulja Ivan
+
+    This file is part of Brick IDE.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>
+"""
+
 import shutil
 from model.SaveNode import *
 from PyQt5.QtCore import Qt, pyqtRemoveInputHook
+from PyQt5.Qt import QFrame
 import os
 import qdarkstyle
 from model.Terminal import Terminal
 from model.Autocompleter import *
+from viewer.NumberBar import NumberBar
 
 
 class TextEditor(QtWidgets.QWidget):
@@ -37,9 +56,12 @@ class TextEditor(QtWidgets.QWidget):
         self.tree.doubleClicked.connect(self.tree_clk)
         self.get_open_path()
         self.init_text_edit()
+        self.text_edit_layout = QtWidgets.QHBoxLayout()
+        self.text_edit_layout.addWidget(self.number_bar)
+        self.text_edit_layout.addWidget(self.text)
 
         self.grid = QtWidgets.QGridLayout()
-        self.grid.addWidget(self.text, 0, 2, 4, 6)
+        self.grid.addLayout(self.text_edit_layout, 0, 2, 4, 6)
         self.grid.addWidget(self.tree, 0, 0, 4, 2)
         self.grid.addWidget(self.terminal, 4, 0, 2, 8)
 
@@ -60,10 +82,14 @@ class TextEditor(QtWidgets.QWidget):
         action_refresh = QtWidgets.QAction("Refresh", None)
         action_refresh.triggered.connect(self.refresh_table)
 
+        action_rename = QtWidgets.QAction("Rename", None)
+        action_rename.triggered.connect(self.rename_node)
+
         if self.tree.currentIndex().internalPointer() is not None:
             self.contextMenu.addAction(actionNewFolder)
             self.contextMenu.addAction(actionNewFile)
             self.contextMenu.addAction(action_delete)
+            self.contextMenu.addAction(action_rename)
             self.contextMenu.addAction(action_refresh)
 
 
@@ -90,6 +116,16 @@ class TextEditor(QtWidgets.QWidget):
             except NotADirectoryError:
                 os.remove(del_path)
             self.refresh_table()
+
+    def rename_node(self):
+        ret_text, ok_button = QtWidgets.QInputDialog.getText(self, "Rename", "Insert new name: ")
+        if ok_button:
+            if ret_text.strip() == "":
+                QtWidgets.QMessageBox.critical(self, "Error", "Empty directory name! ")
+                return
+            path = self.get_path_for_making(self.open_path)
+            os.rename(path, os.path.join(os.path.split(path)[0], ret_text))
+            self.tree.repaint()
 
     def make_new_folder(self):
         base_path = self.open_path
@@ -132,6 +168,9 @@ class TextEditor(QtWidgets.QWidget):
         self.text.setCompleter(self.completer)
         self.text.setStyleSheet("QPlainTextEdit { color: rgb(169, 183, 198) }")
 
+        self.number_bar = NumberBar()
+        self.number_bar.setTextEdit(self.text)
+
         self.font = QtGui.QFont()
         self.font.setFamily('Ariel')
         self.font.setFixedPitch(True)
@@ -152,6 +191,17 @@ class TextEditor(QtWidgets.QWidget):
 
         new_completer = check_for_header_files(self.text.toPlainText(), self.completer.my_keywords)
         self.text.setCompleter(new_completer)
+
+        self.text.installEventFilter(self)
+        self.text.viewport().installEventFilter(self)
+
+    def eventFilter(self, object, event):
+        # Update the line numbers for all events on the text edit and the viewport.
+        # This is easier than connecting all necessary singals.
+        if object in (self.text, self.text.viewport()):
+            self.number_bar.update()
+            return False
+        return QFrame.eventFilter(object, event)
 
     def set_font(self, value):
         if int(value) >= 8 and int(value) <= 50:
