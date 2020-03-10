@@ -67,15 +67,21 @@ class CompilatonDialog(QtWidgets.QDialog):
         node = self.window.form.tree.currentIndex()
         base_path = os.path.split(self.window.form.save_path)[0]
         full_path = self.window.form.save_path
+        base_option = "gcc -g "
 
         if len(self.buttons) != 0:
             for button in self.buttons:
                 if button.isChecked():
                     full_path = full_path + " " + os.path.join(base_path, button.text())
+            flags = QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+            button = QtWidgets.QMessageBox.question(self, "Compilation type", "Do you want to compile as 32-bit program?", flags)
+
+            if (button == QtWidgets.QMessageBox.Yes):
+                base_option += "-m32 "
 
         print(full_path)
         self.window.name = os.path.split(self.window.form.save_path)[1]
-        command = "gcc -g " + full_path + " -o '" + self.window.name + "'"
+        command = base_option + full_path + " -o '" + self.window.name + "'"
         if self.window.form.terminal.executeCommand(command):
             self.window.status_label.setText("Compiled successfully !")
         else:

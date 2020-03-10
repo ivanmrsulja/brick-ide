@@ -35,6 +35,8 @@ class NumberBar(QWidget):
 
         painter = QPainter(self)
 
+        first_line = self.edit.firstVisibleBlock().firstLineNumber()
+        # print(self.highest_line.data())
         line_count = 0
         # Iterate over all text blocks in the document.
         block = self.edit.document().begin()
@@ -64,11 +66,11 @@ class NumberBar(QWidget):
             font.setWordSpacing(20)
             painter.setFont(font)
             if line_count == 1:
-                painter.drawText(self.width() - font_metrics.width(str(line_count)) - 3, 1 + 17 * line_count, str(line_count))
+                painter.drawText(self.width() - font_metrics.width(str(line_count + first_line)) - 3, 1 + 17 * line_count, str(first_line + line_count))
             else:
-                painter.drawText(self.width() - font_metrics.width(str(line_count)) - 3,
+                painter.drawText(self.width() - font_metrics.width(str(line_count + first_line)) - 3,
                                  1 + 17 * line_count + (self.edit.font().pointSize() - 10) * line_count * 2,
-                                 str(line_count))
+                                 str(first_line + line_count))
             #print(self.width() - font_metrics.width(str(line_count)) - 3 , " " , round(position.y()) - contents_y + font_metrics.ascent(), str(line_count))
 
             # Remove the bold style if it was set previously.

@@ -103,6 +103,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.edit = self.bar.addMenu("Edit")
         self.edit.setStyleSheet("QMenu { background-color: #3d4345 ; color: #A9B7C6}")
 
+        self.compiler_settings = QtWidgets.QAction("Compiler")
+        self.edit.addAction(self.compiler_settings)
         self.new = QtWidgets.QAction("New")
         self.new.setShortcut("Ctrl+n")
         self.save = QtWidgets.QAction("Save")
@@ -115,8 +117,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.save.triggered.connect(self.form.save_file)
         self.open.triggered.connect(self.form.open_file)
         self.new.triggered.connect(self.new_file)
+        self.compiler_settings.triggered.connect(self.configure_compiler)
 
         self.show()
+
+    def configure_compiler(self):
+        pass
 
     def change_font(self, value):
         self.form.set_font(value)
@@ -173,8 +179,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         clear()
         command = "ddd " + self.name
-        #os.system(command)
-        self.form.terminal.executeCommand(command)
+        os.system(command)
 
     def closeEvent(self, event):
         # do stuff

@@ -85,11 +85,12 @@ class TextEditor(QtWidgets.QWidget):
         action_rename = QtWidgets.QAction("Rename", None)
         action_rename.triggered.connect(self.rename_node)
 
-        if self.tree.currentIndex().internalPointer() is not None:
+        if self.open_path is not None:
             self.contextMenu.addAction(actionNewFolder)
             self.contextMenu.addAction(actionNewFile)
             self.contextMenu.addAction(action_delete)
-            self.contextMenu.addAction(action_rename)
+            if self.tree.currentIndex().internalPointer() is not None:
+                self.contextMenu.addAction(action_rename)
             self.contextMenu.addAction(action_refresh)
 
 
@@ -116,6 +117,8 @@ class TextEditor(QtWidgets.QWidget):
             except NotADirectoryError:
                 os.remove(del_path)
             self.refresh_table()
+            if del_path == self.save_path:
+                self.save_path = None
 
     def rename_node(self):
         ret_text, ok_button = QtWidgets.QInputDialog.getText(self, "Rename", "Insert new name: ")
@@ -161,6 +164,8 @@ class TextEditor(QtWidgets.QWidget):
             with open(final_path, "w") as new_file:
                 pass
             self.refresh_table()
+            return final_path
+        return None
 
     def init_text_edit(self):
         self.completer = MyDictionaryCompleter()
@@ -180,11 +185,11 @@ class TextEditor(QtWidgets.QWidget):
         self.highlighter = Highlighter(self.text.document())
         self.text.textChanged.connect(self.save_locally)
 
-        with open("viewer/local_data.txt", "r") as f:
+        with open("../viewer/local_data.txt", "r") as f:
             lines = f.read()
             self.text.setPlainText(lines)
 
-        if lines.strip() == "":
+        if lines.strip() == "" and self.save_path is not None:
             with open(self.save_path, "r") as f:
                 lines = f.read()
                 self.text.setPlainText(lines)
@@ -215,7 +220,7 @@ class TextEditor(QtWidgets.QWidget):
         if self.save_path is None:
             return
         text = self.text.toPlainText()
-        with open("viewer/local_data.txt", "w") as f:
+        with open("../viewer/local_data.txt", "w") as f:
             f.write(text)
         if self.save_path not in self.local_data.keys():
             new_save = SaveNode(self.save_path)
@@ -229,11 +234,18 @@ class TextEditor(QtWidgets.QWidget):
 
     def save_file(self):
         if self.save_path is None:
-            QtWidgets.QMessageBox.information(self, "Error",
-                                              "Open directory first, then select file by double clicking on it to enable this option.")
+            QtWidgets.QMessageBox.information(self, "Specify location",
+                                              "Please specify a location where you would like to save.")
             if self.open_path is None or self.open_path == "":
                 self.open_file()
-            return
+
+            path = self.make_new_c_file()
+            if path is None:
+                return
+            else:
+                self.save_path = path
+                self.tree.setCurrentIndex(self.model.index(self.save_path))
+                self.save_locally()
         try:
             with open(self.save_path, "w") as file:
                 text = self.text.toPlainText()
@@ -259,11 +271,11 @@ class TextEditor(QtWidgets.QWidget):
         self.update_hints()
 
     def write_path(self):
-        with open("viewer/temp.txt", "w") as f:
+        with open("../viewer/temp.txt", "w") as f:
             f.write(self.open_path + "|" + str(self.save_path))
 
     def get_open_path(self):
-        with open("viewer/temp.txt", "r") as f:
+        with open("../viewer/temp.txt", "r") as f:
             path = f.read()
         if path == "":
             return
@@ -286,9 +298,12 @@ class TextEditor(QtWidgets.QWidget):
             self.save_path = None
 
     def get_path_for_making(self, base_path):
+        if self.tree.currentIndex().data() is None:
+            return self.open_path
         current = self.tree.currentIndex()
         path = []
         while current != self.tree.rootIndex():
+            print(self.tree.currentIndex().data())
             path.append(current.data())
             current = current.parent()
         path.reverse()

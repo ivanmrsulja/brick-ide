@@ -25,11 +25,11 @@ class Highlighter(QSyntaxHighlighter):
     def __init__(self, parent=None):
         super(Highlighter, self).__init__(parent)
 
-        keywordFormat = QTextCharFormat()
-        keywordFormat.setForeground(QColor(0xCB772F))
-        keywordFormat.setFontWeight(QFont.Bold)
+        keyword_format = QTextCharFormat()
+        keyword_format.setForeground(QColor(0xCB772F))
+        keyword_format.setFontWeight(QFont.Bold)
 
-        keywordPatterns = ["\\bauto\\b", "\\bbreak\\b", "\\bcase\\b", "\\bchar\\b", "\\bconst\\b", "\\bcontinue\\b",
+        keyword_patterns = ["\\bauto\\b", "\\bbreak\\b", "\\bcase\\b", "\\bchar\\b", "\\bconst\\b", "\\bcontinue\\b",
                            "\\bdefault\\b", "\\bdo\\b", "\\bdouble\\b", "\\belse\\b", "\\benum\\b", "\\bextern\\b",
                            "\\bfloat\\b", "\\bfor\\b", "\\bgoto\\b", "\\bif\\b", "\\bint\\b", "\\blong\\b",
                            "\\bregister\\b", "\\breturn\\b", "\\bshort\\b", "\\bsigned\\b", "\\bsizeof\\b",
@@ -37,40 +37,40 @@ class Highlighter(QSyntaxHighlighter):
                            "\\bunsigned\\b", "\\bvoid\\b", "\\bvolatile\\b", "\\bwhile\\b", "\\b#include\\b"]
 
         self.highlightingRules = []
-        for pattern in keywordPatterns:
-            self.highlightingRules.append((QRegExp(pattern), keywordFormat))
+        for pattern in keyword_patterns:
+            self.highlightingRules.append((QRegExp(pattern), keyword_format))
 
-        classFormat = QTextCharFormat()
-        classFormat.setFontWeight(QFont.Bold)
-        classFormat.setForeground(Qt.darkMagenta)
-        self.highlightingRules.append((QRegExp("\\bQ[A-Za-z]+\\b"),
-                                       classFormat))
+        constant_format = QTextCharFormat()
+        constant_format.setFontWeight(QFont.Bold)
+        constant_format.setForeground(Qt.darkMagenta)
+        self.highlightingRules.append((QRegExp("\\b([A-Z]+\_*)+\\b"),
+                                       constant_format))
 
-        singleLineCommentFormat = QTextCharFormat()
-        singleLineCommentFormat.setForeground(Qt.green)
+        single_line_comment_format = QTextCharFormat()
+        single_line_comment_format.setForeground(Qt.green)
         self.highlightingRules.append((QRegExp("//[^\n]*"),
-                                       singleLineCommentFormat))
+                                       single_line_comment_format))
 
         self.multiLineCommentFormat = QTextCharFormat()
         self.multiLineCommentFormat.setForeground(Qt.green)
 
-        hashtagFormat = QTextCharFormat()
-        hashtagFormat.setForeground(Qt.magenta)
-        self.highlightingRules.append((QRegExp("#[^ ]*"), hashtagFormat))
+        hashtag_format = QTextCharFormat()
+        hashtag_format.setForeground(Qt.magenta)
+        self.highlightingRules.append((QRegExp("#[^ ]*"), hashtag_format))
 
-        quotationFormat = QTextCharFormat()
-        quotationFormat.setForeground(QColor(165, 194, 92))
-        self.highlightingRules.append((QRegExp("\".*\""), quotationFormat))
+        quotation_format = QTextCharFormat()
+        quotation_format.setForeground(QColor(165, 194, 92))
+        self.highlightingRules.append((QRegExp("\".*\""), quotation_format))
 
-        includeFormat = QTextCharFormat()
-        includeFormat.setForeground(Qt.darkMagenta)
-        self.highlightingRules.append((QRegExp("<.*>"), includeFormat))
+        include_format = QTextCharFormat()
+        include_format.setForeground(Qt.darkMagenta)
+        self.highlightingRules.append((QRegExp("<.*>"), include_format))
 
-        functionFormat = QTextCharFormat()
-        functionFormat.setFontItalic(True)
-        functionFormat.setForeground(QColor(0xCB772F))
+        function_format = QTextCharFormat()
+        function_format.setFontItalic(True)
+        function_format.setForeground(QColor(0xCB772F))
         self.highlightingRules.append((QRegExp("\\b[A-Za-z0-9_]+(?=\\()"),
-                                       functionFormat))
+                                       function_format))
 
         self.commentStartExpression = QRegExp("/\\*")
         self.commentEndExpression = QRegExp("\\*/")
