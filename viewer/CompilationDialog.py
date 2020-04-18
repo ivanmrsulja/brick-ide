@@ -20,6 +20,8 @@ import os
 
 clear = lambda: os.system("clear")
 
+start_directory = os.getcwd()
+
 class CompilatonDialog(QtWidgets.QDialog):
 
     def __init__(self, children, parent):
@@ -73,7 +75,7 @@ class CompilatonDialog(QtWidgets.QDialog):
             for button in self.buttons:
                 if button.isChecked():
                     full_path = full_path + " " + os.path.join(base_path, button.text())
-            flags = QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+            flags = QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
             button = QtWidgets.QMessageBox.question(self, "Compilation type", "Do you want to compile as 32-bit program?", flags)
 
             if (button == QtWidgets.QMessageBox.Yes):
@@ -81,6 +83,7 @@ class CompilatonDialog(QtWidgets.QDialog):
 
         print(full_path)
         self.window.name = os.path.split(self.window.form.save_path)[1]
+        self.window.name = "_object_file_" + self.window.name
         command = base_option + full_path + " -o '" + self.window.name + "'"
         if self.window.form.terminal.executeCommand(command):
             self.window.status_label.setText("Compiled successfully !")

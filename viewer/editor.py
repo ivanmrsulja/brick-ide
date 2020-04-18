@@ -25,6 +25,8 @@ from model.Terminal import Terminal
 from model.Autocompleter import *
 from viewer.NumberBar import NumberBar
 
+start_directory = os.getcwd()
+
 
 class TextEditor(QtWidgets.QWidget):
 
@@ -54,7 +56,11 @@ class TextEditor(QtWidgets.QWidget):
         self.tree.setSortingEnabled(True)
         self.tree.setWindowTitle("Dir View")
         self.tree.doubleClicked.connect(self.tree_clk)
+
         self.get_open_path()
+        if self.open_path is not None:
+            self.terminal.executeCommand("cd " + self.open_path)
+
         self.init_text_edit()
         self.text_edit_layout = QtWidgets.QHBoxLayout()
         self.text_edit_layout.addWidget(self.number_bar)
@@ -93,7 +99,6 @@ class TextEditor(QtWidgets.QWidget):
                 self.contextMenu.addAction(action_rename)
             self.contextMenu.addAction(action_refresh)
 
-
         self.contextMenu.exec_(self.tree.viewport().mapToGlobal(position))
 
     def refresh_table(self):
@@ -102,7 +107,7 @@ class TextEditor(QtWidgets.QWidget):
     def delete_node(self):
         name = str(self.tree.currentIndex().data())
         message = name + " will be deleted permanently !"
-        flags = QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+        flags = QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
         button = QtWidgets.QMessageBox.question(self, "Are you sure ?", message, flags)
 
         if (button == QtWidgets.QMessageBox.Yes):
@@ -185,7 +190,7 @@ class TextEditor(QtWidgets.QWidget):
         self.highlighter = Highlighter(self.text.document())
         self.text.textChanged.connect(self.save_locally)
 
-        with open("../viewer/local_data.txt", "r") as f:
+        with open(os.path.join(start_directory, "../viewer/local_data.txt"), "r") as f:
             lines = f.read()
             self.text.setPlainText(lines)
 
@@ -220,7 +225,7 @@ class TextEditor(QtWidgets.QWidget):
         if self.save_path is None:
             return
         text = self.text.toPlainText()
-        with open("../viewer/local_data.txt", "w") as f:
+        with open(os.path.join(start_directory, "../viewer/local_data.txt"), "w") as f:
             f.write(text)
         if self.save_path not in self.local_data.keys():
             new_save = SaveNode(self.save_path)
@@ -230,7 +235,7 @@ class TextEditor(QtWidgets.QWidget):
             if text != self.local_data[self.save_path].data:
                 self.local_data[self.save_path].data = text
                 self.local_data[self.save_path].saved = False
-        #print(self.local_data[self.save_path].data)
+        # print(self.local_data[self.save_path].data)
 
     def save_file(self):
         if self.save_path is None:
@@ -267,15 +272,15 @@ class TextEditor(QtWidgets.QWidget):
         self.open_path = file_path
         self.write_path()
         self.tree.setRootIndex(self.model.index(self.open_path))
-
+        self.terminal.executeCommand("cd " + self.open_path)
         self.update_hints()
 
     def write_path(self):
-        with open("../viewer/temp.txt", "w") as f:
+        with open(os.path.join(start_directory, "../viewer/temp.txt"), "w") as f:
             f.write(self.open_path + "|" + str(self.save_path))
 
     def get_open_path(self):
-        with open("../viewer/temp.txt", "r") as f:
+        with open(os.path.join(start_directory, "../viewer/temp.txt"), "r") as f:
             path = f.read()
         if path == "":
             return
@@ -286,7 +291,7 @@ class TextEditor(QtWidgets.QWidget):
         if self.open_path != "None":
             self.tree.setModel(self.model)
 
-            for i in range(1,4):
+            for i in range(1, 4):
                 self.tree.hideColumn(i)
 
             self.tree.setRootIndex(self.model.index(self.open_path))
@@ -313,8 +318,7 @@ class TextEditor(QtWidgets.QWidget):
 
         final_path = base_path + final_path
 
-        return  final_path
-
+        return final_path
 
     def tree_clk(self):
         if self.tree.currentIndex().data().endswith(".c") or self.tree.currentIndex().data().endswith(".h"):

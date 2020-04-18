@@ -189,7 +189,7 @@ class MainWindow(QtWidgets.QMainWindow):
             message = "You have unsaved changes in: "
             for filename in self.form.get_unsaved_files():
                 message += filename + ", "
-            flags = QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+            flags = QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
             button = QtWidgets.QMessageBox.question(self, "Exit without saving?",  message[0: -2] + ".", flags)
 
             if (button == QtWidgets.QMessageBox.No):

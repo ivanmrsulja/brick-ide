@@ -19,8 +19,11 @@ from PyQt5 import QtGui, QtCore, QtWidgets
 from model.syntax import Highlighter
 import re
 import json
+import os
 
 SYSTEM_LIBRARIES = {}
+
+start_directory = os.getcwd()
 
 
 class MyTextEdit(QtWidgets.QPlainTextEdit):
@@ -69,20 +72,13 @@ class MyTextEdit(QtWidgets.QPlainTextEdit):
         if event.key() == QtCore.Qt.Key_BracketLeft:
             self.insertPlainText("[]")
             return
-        if event.key() == QtCore.Qt.Key_BraceLeft:
-            spaces = ""
-            count = 1 / 4
-            if self.textCursor().block().text().startswith("    "):
-                count = self.textCursor().block().text().count("    ")
-                for i in range(count):
-                    spaces += "    "
-            self.insertPlainText("{\n    " + spaces + "\n" + spaces + "}")
-            cursor = self.textCursor()
-            cursor.movePosition(cursor.Left, cursor.MoveAnchor, count * 4 + 2)
-            self.setTextCursor(cursor)
-            return
         if event.key() == QtCore.Qt.Key_Tab:
-            self.insertPlainText("    ")
+            text = self.textCursor().block().text()
+            if text.strip() == "for":
+                self.insertPlainText("( i = 0; i < length; i += 1 )")
+                self.finish_braces_for_block("{")
+            else:
+                self.insertPlainText("    ")
             return
         if self.completer and self.completer.popup() and self.completer.popup().isVisible():
             if event.key() in (
@@ -95,8 +91,13 @@ class MyTextEdit(QtWidgets.QPlainTextEdit):
                 return
         if event.key() == QtCore.Qt.Key_Return:
             text = self.textCursor().block().text()
+            # autocomplete for blocks
+            if text.strip().endswith("{"):
+                self.finish_braces_for_block()
+                return
+            # add included libraries to autocompleter
             if "#include" in text:
-                self.setCompleter(check_for_header_files(self.toPlainText(), None))
+                self.setCompleter(check_for_header_files(self.toPlainText(), self.textCursor().position(), None))
             tab_counter = 0
             for char in text:
                 if char != " ":
@@ -109,14 +110,14 @@ class MyTextEdit(QtWidgets.QPlainTextEdit):
             self.insertPlainText(line)
             return
         if event.modifiers() == QtCore.Qt.ShiftModifier and event.key() == QtCore.Qt.Key_ParenLeft:
-            self.insertPlainText("( )")
+            self.insertPlainText("()")
             cursor = self.textCursor()
-            cursor.movePosition(cursor.Left, cursor.MoveAnchor, 2)
+            cursor.movePosition(cursor.Left, cursor.MoveAnchor, 1)
             self.setTextCursor(cursor)
             return
         # has ctrl-i been pressed??
         if event.modifiers() == QtCore.Qt.ControlModifier and event.key() == QtCore.Qt.Key_I:
-            self.setCompleter(check_for_header_files(self.toPlainText()))
+            self.setCompleter(check_for_header_files(self.toPlainText(), self.textCursor().position()))
         # has ctrl-Space been pressed??
         isShortcut = (event.modifiers() == QtCore.Qt.ControlModifier and \
                       event.key() == QtCore.Qt.Key_Space)
@@ -151,7 +152,8 @@ class MyTextEdit(QtWidgets.QPlainTextEdit):
                        not ctrlOrShift)
 
         completion_prefix = self.textUnderCursor()
-        if completion_prefix == ")":
+        # print(completion_prefix)
+        if ")" in completion_prefix or "]" in completion_prefix or "}" in completion_prefix or ">" in completion_prefix:
             self.shift_cursor("l", 1)
             completion_prefix = self.textUnderCursor()
             self.shift_cursor("r", 1)
@@ -172,6 +174,19 @@ class MyTextEdit(QtWidgets.QPlainTextEdit):
                     + self.completer.popup().verticalScrollBar().sizeHint().width())
         self.completer.complete(cr)  # popup
 
+    def finish_braces_for_block(self, start=""):
+        spaces = ""
+        count = 1 / 4
+        if self.textCursor().block().text().startswith("    "):
+            count = self.textCursor().block().text().count("    ")
+            for i in range(count):
+                spaces += "    "
+        self.insertPlainText(start + "\n    " + spaces + "\n" + spaces + "}")
+        cursor = self.textCursor()
+        cursor.movePosition(cursor.Left, cursor.MoveAnchor, count * 4 + 2)
+        self.setTextCursor(cursor)
+        return
+
     def shift_cursor(self, direction, spaces):
         cursor = self.textCursor()
         if direction == "r":
@@ -189,14 +204,15 @@ class MyDictionaryCompleter(QtWidgets.QCompleter):
         self.current_parrent = parent
         self.my_keywords = my_keywords
         if len(SYSTEM_LIBRARIES) == 0:
-            with open("../model/libraries.json", "r") as libs:
+            with open(os.path.join(start_directory, "../model/libraries.json"), "r") as libs:
                 SYSTEM_LIBRARIES = json.loads(libs.read())
             SYSTEM_LIBRARIES["_natives"] = ["auto", "break", "case", "char", "const", "continue",
                                             "default", "do", "double", "else", "enum", "extern",
                                             "float", "for", "goto", "if", "int", "long",
                                             "register", "return", "short", "signed", "sizeof",
                                             "static", "struct", "switch", "typedef", "union",
-                                            "unsigned", "void", "volatile", "while", "include"]
+                                            "unsigned", "void", "volatile", "while", "include", "NULL", "FILE",
+                                            "stdlib.h", "sttdio.h"]
             SYSTEM_LIBRARIES["_others"] = []
         QtWidgets.QCompleter.__init__(self, self.my_keywords, self.current_parrent)
         self.activated.connect(self.changeCompletion)
@@ -213,19 +229,80 @@ class MyDictionaryCompleter(QtWidgets.QCompleter):
         self.activated.connect(self.changeCompletion)
 
 
-def check_for_header_files(text, keywords: list = None):
+def get_function_domain(text, index):
+    print(index)
+    closed_brace_count = 0
+    opened_brace_count = 0
+    first, second = 0, 0
+    i = index
+    while i != -1:
+        if text[i] == "}":
+            closed_brace_count += 1
+        elif text[i] == "{":
+            if closed_brace_count == 0:
+                first = i
+                break
+            else:
+                closed_brace_count -= 1
+        i -= 1
+    i = index
+    while i != len(text):
+        if text[i] == "{":
+            opened_brace_count += 1
+        elif text[i] == "}":
+            if opened_brace_count == 0:
+                second = i
+                break
+            else:
+                opened_brace_count -= 1
+        i += 1
+    return text[first+1:second]
+
+
+def check_for_header_files(text, index, keywords: list = None):
     global SYSTEM_LIBRARIES
     if keywords is None:
         keywords = []
     else:
         keywords.clear()
+
+    domain = ""
+    if index is not None:
+        domain = get_function_domain(text, index)
+
     occurences = re.findall("#include <.+>", text)
     occurences.append("#include <_natives>")
     occurences.append("#include <_others>")
+
     definitions = re.findall("#define .+", text)
+
+    SYSTEM_LIBRARIES["_others"].clear()
     for definition in definitions:
-        SYSTEM_LIBRARIES["_others"].clear()
-        SYSTEM_LIBRARIES["_others"].append(definition.split(" ")[1])
+        if "{" in definition:
+            new_complete = definition.split(" ")[1] + " (MACRO DEFINITION)"
+        else:
+            new_complete = definition.split(" ")[1] + " (" + definition.split(" ")[2] + ")"
+        SYSTEM_LIBRARIES["_others"].append(new_complete)
+
+    functions = re.findall("[A-Za-z0-9_]+\** +[A-Za-z0-9_]+ *\\([A-Za-z0-9_ *,]*\\) *{", text)
+    for fun in functions:
+        fun = fun.replace("{", "").strip()
+        tokens = fun.split(" ")
+        fun_str = ""
+        for i in range(1, len(tokens)):
+            fun_str += " " + tokens[i]
+        new_complete = fun_str.strip() + "[returns: " + tokens[0] + "]"
+        SYSTEM_LIBRARIES["_others"].append(new_complete)
+
+    variables = re.findall("[volatile|struct]?[A-Za-z0-9_]+\** +[A-Za-z0-9_]+[ a-zA-Z0-9_]*[ *=?|;|[]", domain)
+    for var in variables:
+        var = var.replace(";", "")
+        var = var.replace("=", "")
+        var = var.replace("[", "")
+        value = var.strip().split(" ")[-1]
+        if value not in SYSTEM_LIBRARIES["_others"] and "return" not in var:
+            SYSTEM_LIBRARIES["_others"].append(value)
+
     for occurence in occurences:
         if "<" in occurence:
             library = occurence.strip().split(" ")[1].replace("<", "").replace(">", "")
@@ -243,7 +320,7 @@ def check_for_header_files(text, keywords: list = None):
 def append_word_to_autocompleter(text, word):
     global SYSTEM_LIBRARIES
     SYSTEM_LIBRARIES["_others"].append(word)
-    check_for_header_files(text)
+    check_for_header_files(text, -1)
 
 
 if __name__ == "__main__":
