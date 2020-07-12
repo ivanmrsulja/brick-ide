@@ -26,7 +26,6 @@ from viewer.CompilationDialog import CompilatonDialog
 
 clear = lambda: os.system("clear")
 
-
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -36,6 +35,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.windows.append(self)
         clear()
         self.name = None
+        self.base_option = "gcc -g "
         self.init_ui()
 
     def init_ui(self):
@@ -70,7 +70,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.build_btn = QtWidgets.QPushButton("Build")
         self.build_btn.setStyleSheet("QPushButton { background-color: #2B2B2B ; color: #A9B7C6}")
-        self.clear_btn = QtWidgets.QPushButton("Clear")
+        self.clear_btn = QtWidgets.QPushButton("Clean")
         self.clear_btn.setStyleSheet("QPushButton { background-color: #2B2B2B ; color: #A9B7C6}")
         debug_btn = QtWidgets.QPushButton("Debug")
         debug_btn.setStyleSheet("QPushButton { background-color: #2B2B2B ; color: #A9B7C6}")
@@ -105,24 +105,34 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.compiler_settings = QtWidgets.QAction("Compiler")
         self.edit.addAction(self.compiler_settings)
-        self.new = QtWidgets.QAction("New")
+        self.new = QtWidgets.QAction("New Window")
         self.new.setShortcut("Ctrl+n")
+
+        self.new_project = QtWidgets.QAction("New Project")
+        self.new_project.setShortcut("Ctrl+p")
+
         self.save = QtWidgets.QAction("Save")
         self.save.setShortcut("Ctrl+s")
         self.open = QtWidgets.QAction("Open")
         self.open.setShortcut("Ctrl+o")
         self.file.addAction(self.new)
+        self.file.addAction(self.new_project)
         self.file.addAction(self.save)
         self.file.addAction(self.open)
         self.save.triggered.connect(self.form.save_file)
         self.open.triggered.connect(self.form.open_file)
         self.new.triggered.connect(self.new_file)
         self.compiler_settings.triggered.connect(self.configure_compiler)
+        self.new_project.triggered.connect(self.form.make_new_project)
 
         self.show()
 
     def configure_compiler(self):
-        pass
+        text, ok_pressed = QtWidgets.QInputDialog.getText(self, "Compiler settings", "Edit settings:", QtWidgets.QLineEdit.Normal,
+                                                         self.base_option)
+        if ok_pressed and text != '':
+            self.base_option = text
+
 
     def change_font(self, value):
         self.form.set_font(value)
@@ -134,9 +144,11 @@ class MainWindow(QtWidgets.QMainWindow):
             return
 
         if self.name is not None:
-            QtWidgets.QMessageBox.information(self, "You have some leftover files", "Please clear previously compiled files to avoid cluttering.")
+            QtWidgets.QMessageBox.information(self, "You have some leftover files",
+                                              "Please clean previously compiled files to avoid cluttering.")
             return
-        dialog = CompilatonDialog(self.get_children(), self)
+        print(self.base_option)
+        dialog = CompilatonDialog(self.get_children(), self, self.base_option)
         self.windows.append(dialog)
 
     def get_children(self):
@@ -144,10 +156,10 @@ class MainWindow(QtWidgets.QMainWindow):
         for_ret = []
         if "." in node.data():
             i = 0
-            while node.parent().child(i,0).data() is not None:
-                if node.parent().child(i,0).data().endswith(".S"):
-                    for_ret.append(node.parent().child(i,0).data())
-                i +=1
+            while node.parent().child(i, 0).data() is not None:
+                if node.parent().child(i, 0).data().endswith(".S"):
+                    for_ret.append(node.parent().child(i, 0).data())
+                i += 1
             return for_ret
 
     def build_c(self):
@@ -159,7 +171,6 @@ class MainWindow(QtWidgets.QMainWindow):
         phrase = '"Press_any_key_to_continue..."'
         os.system("gnome-terminal -e 'bash -c \"" + command + "; read -n1 -r -p " + phrase + " key; exec exit \"'")
 
-
     def clear_c(self):
         if self.name is None:
             QtWidgets.QMessageBox.critical(self, "Error", "You have to compile first ! ")
@@ -167,7 +178,7 @@ class MainWindow(QtWidgets.QMainWindow):
         clear()
         command = "rm '" + self.name + "'"
         os.system(command)
-        self.status_label.setText("Local data cleared successfully.")
+        self.status_label.setText("Local data cleaned successfully.")
         self.name = None
 
     def new_file(self):
@@ -190,12 +201,13 @@ class MainWindow(QtWidgets.QMainWindow):
             for filename in self.form.get_unsaved_files():
                 message += filename + ", "
             flags = QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
-            button = QtWidgets.QMessageBox.question(self, "Exit without saving?",  message[0: -2] + ".", flags)
+            button = QtWidgets.QMessageBox.question(self, "Exit without saving?", message[0: -2] + ".", flags)
 
             if (button == QtWidgets.QMessageBox.No):
                 event.ignore()
             else:
                 event.accept()
+
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

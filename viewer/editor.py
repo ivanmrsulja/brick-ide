@@ -24,6 +24,7 @@ import qdarkstyle
 from model.Terminal import Terminal
 from model.Autocompleter import *
 from viewer.NumberBar import NumberBar
+import time
 
 start_directory = os.getcwd()
 
@@ -274,6 +275,51 @@ class TextEditor(QtWidgets.QWidget):
         self.tree.setRootIndex(self.model.index(self.open_path))
         self.terminal.executeCommand("cd " + self.open_path)
         self.update_hints()
+
+    def make_new_project(self):
+        file_path = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose location")
+        if file_path == "":
+            return
+        self.save_path = None
+        if self.open_path is None:
+            self.tree.setModel(self.model)
+            for i in range(1, 4):
+                self.tree.hideColumn(i)
+        self.open_path = file_path
+        self.write_path()
+        self.tree.setRootIndex(self.model.index(self.open_path))
+        self.terminal.executeCommand("cd " + self.open_path)
+        self.terminal.executeCommand("mkdir " + os.path.join(self.open_path, "Headers"))
+        self.terminal.executeCommand("mkdir " + os.path.join(self.open_path, "Sources"))
+        self.terminal.executeCommand("mkdir " + os.path.join(self.open_path, "Resources"))
+
+        self.tree.setCurrentIndex(self.model.index(os.path.join(self.open_path, "Sources")))
+
+        base_path = self.open_path
+        if self.tree.currentIndex().parent() != self.tree.rootIndex() or not "." in self.tree.currentIndex().data():
+            base_path = self.get_path_for_making(self.open_path)
+            if "." in base_path:
+                base_path = os.path.split(base_path)[0]
+
+        print(base_path)
+        final_path = os.path.join(base_path, "main.c")
+        with open(final_path, "w") as new_file:
+            new_file.write(
+                """/* Thank you for using Brick, go into File -> New Project to get started, \n   autocompleter shortcut is Ctrl + SPACE or Ctrl + E, press Ctrl + I to \n   optimise and refresh imports. Enjoy <3 */\n\n#include <stdio.h>\n#include <stdlib.h>\n\nint main(void){\n    printf("Hello World!");\n    return 0;\n}""")
+            new_file.flush()
+        self.refresh_table()
+
+        self.tree.setCurrentIndex(self.model.index(os.path.join(self.open_path, "Sources/main.c")))
+        base_path = self.get_path_for_making(self.open_path)
+        self.save_path = base_path
+
+        with open(self.save_path, "r") as file:
+            text = file.read()
+            new_save = SaveNode(self.save_path)
+            new_save.data = text
+            self.local_data[self.save_path] = new_save
+            self.text.setPlainText(text)
+        self.write_path()
 
     def write_path(self):
         with open(os.path.join(start_directory, "../viewer/temp.txt"), "w") as f:

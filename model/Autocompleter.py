@@ -294,7 +294,7 @@ def check_for_header_files(text, index, keywords: list = None):
         new_complete = fun_str.strip() + "[returns: " + tokens[0] + "]"
         SYSTEM_LIBRARIES["_others"].append(new_complete)
 
-    variables = re.findall("[volatile|struct]?[A-Za-z0-9_]+\** +[A-Za-z0-9_]+[ a-zA-Z0-9_]*[ *=?|;|[]", domain)
+    variables = re.findall("[volatile|struct]?[A-Za-z0-9_]* ?\** ?[A-Za-z0-9_]+[ a-zA-Z0-9_]*[ *=?|;|[]", domain)
     for var in variables:
         var = var.replace(";", "")
         var = var.replace("=", "")

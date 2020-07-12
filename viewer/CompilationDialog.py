@@ -24,10 +24,12 @@ start_directory = os.getcwd()
 
 class CompilatonDialog(QtWidgets.QDialog):
 
-    def __init__(self, children, parent):
+    def __init__(self, children, parent, settings):
         super(CompilatonDialog, self).__init__(parent)
         self.children = children
         self.window = parent
+        self.base_option = settings
+        print(self.base_option)
         self.initUI()
 
     def initUI(self):
@@ -69,7 +71,6 @@ class CompilatonDialog(QtWidgets.QDialog):
         node = self.window.form.tree.currentIndex()
         base_path = os.path.split(self.window.form.save_path)[0]
         full_path = self.window.form.save_path
-        base_option = "gcc -g "
 
         if len(self.buttons) != 0:
             for button in self.buttons:
@@ -79,12 +80,11 @@ class CompilatonDialog(QtWidgets.QDialog):
             button = QtWidgets.QMessageBox.question(self, "Compilation type", "Do you want to compile as 32-bit program?", flags)
 
             if (button == QtWidgets.QMessageBox.Yes):
-                base_option += "-m32 "
+                self.base_option += "-m32 "
 
-        print(full_path)
         self.window.name = os.path.split(self.window.form.save_path)[1]
         self.window.name = "_object_file_" + self.window.name
-        command = base_option + full_path + " -o '" + self.window.name + "'"
+        command = self.base_option + full_path + " -o '" + self.window.name + "'"
         if self.window.form.terminal.executeCommand(command):
             self.window.status_label.setText("Compiled successfully !")
         else:
