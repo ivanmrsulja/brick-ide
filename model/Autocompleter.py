@@ -100,7 +100,7 @@ class MyTextEdit(QtWidgets.QPlainTextEdit):
             text = self.textCursor().block().text()
             whole_text = self.toPlainText()
             # autocomplete for blocks
-            if whole_text[self.textCursor().position()] == "}" and whole_text[self.textCursor().position() - 1] == "{":
+            if len(whole_text) != self.textCursor().position() and whole_text[self.textCursor().position()] == "}" and whole_text[self.textCursor().position() - 1] == "{":
                 self.finish_braces_for_block()
                 return
             # add included libraries to autocompleter
