@@ -1,0 +1,14 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int neka_funkcija(){
+    return 1;
+}
+
+int main(){
+    int a;
+    a = neka_funkcija();
+    printf("%d\n", a);
+    a = 8;
+    return 0;
+}

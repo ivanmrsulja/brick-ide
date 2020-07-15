@@ -89,10 +89,18 @@ class MyTextEdit(QtWidgets.QPlainTextEdit):
                     QtCore.Qt.Key_Backtab):
                 event.ignore()
                 return
+        if event.modifiers() == QtCore.Qt.ShiftModifier and event.key() == QtCore.Qt.Key_BraceLeft:
+            self.insertPlainText("{}")
+            cursor = self.textCursor()
+            cursor.movePosition(cursor.Left, cursor.MoveAnchor, 1)
+            self.setTextCursor(cursor)
+            return
+
         if event.key() == QtCore.Qt.Key_Return:
             text = self.textCursor().block().text()
+            whole_text = self.toPlainText()
             # autocomplete for blocks
-            if text.strip().endswith("{"):
+            if whole_text[self.textCursor().position()] == "}" and whole_text[self.textCursor().position() - 1] == "{":
                 self.finish_braces_for_block()
                 return
             # add included libraries to autocompleter
@@ -138,7 +146,6 @@ class MyTextEdit(QtWidgets.QPlainTextEdit):
             self.completer.setCompletionMode(QtWidgets.QCompleter.PopupCompletion)
             return
         if (not self.completer or not isShortcut):
-            pass
             QtWidgets.QPlainTextEdit.keyPressEvent(self, event)
 
         ctrlOrShift = event.modifiers() in (QtCore.Qt.ControlModifier, \
@@ -176,14 +183,17 @@ class MyTextEdit(QtWidgets.QPlainTextEdit):
 
     def finish_braces_for_block(self, start=""):
         spaces = ""
-        count = 1 / 4
+        count = 1/4
         if self.textCursor().block().text().startswith("    "):
             count = self.textCursor().block().text().count("    ")
             for i in range(count):
                 spaces += "    "
-        self.insertPlainText(start + "\n    " + spaces + "\n" + spaces + "}")
+        self.insertPlainText(start + "\n    " + spaces + "\n" + spaces)  #ovdje
         cursor = self.textCursor()
-        cursor.movePosition(cursor.Left, cursor.MoveAnchor, count * 4 + 2)
+        move = 1
+        if count == 1/4:
+            move = 0
+        cursor.movePosition(cursor.Left, cursor.MoveAnchor, count * 4 + move)
         self.setTextCursor(cursor)
         return
 
@@ -230,7 +240,6 @@ class MyDictionaryCompleter(QtWidgets.QCompleter):
 
 
 def get_function_domain(text, index):
-    print(index)
     closed_brace_count = 0
     opened_brace_count = 0
     first, second = 0, 0
@@ -267,8 +276,9 @@ def check_for_header_files(text, index, keywords: list = None):
         keywords.clear()
 
     domain = ""
-    if index is not None:
-        domain = get_function_domain(text, index)
+    if len(text) != index:
+        if index is not None:
+            domain = get_function_domain(text, index)
 
     occurences = re.findall("#include <.+>", text)
     occurences.append("#include <_natives>")

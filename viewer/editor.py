@@ -385,6 +385,9 @@ class TextEditor(QtWidgets.QWidget):
 
             self.write_path()
             self.update_hints()
+        elif self.tree.currentIndex().data().endswith(".txt"):
+            base_path = self.get_path_for_making(self.open_path)
+            self.terminal.executeCommand("gedit " + base_path)
 
     def update_hints(self):
         new_completer = check_for_header_files(self.text.toPlainText(), self.completer.my_keywords)
