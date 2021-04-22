@@ -76,7 +76,7 @@ class MyTextEdit(QtWidgets.QPlainTextEdit):
             text = self.textCursor().block().text()
             if text.strip() == "for":
                 self.insertPlainText("( i = 0; i < length; i += 1 )")
-                self.finish_braces_for_block("{")
+                self.finish_braces_for_block("{", after_for=True)
             else:
                 self.insertPlainText("    ")
             return
@@ -181,7 +181,7 @@ class MyTextEdit(QtWidgets.QPlainTextEdit):
                     + self.completer.popup().verticalScrollBar().sizeHint().width())
         self.completer.complete(cr)  # popup
 
-    def finish_braces_for_block(self, start=""):
+    def finish_braces_for_block(self, start="", after_for=False):
         spaces = ""
         count = 1/4
         if self.textCursor().block().text().startswith("    "):
@@ -193,6 +193,9 @@ class MyTextEdit(QtWidgets.QPlainTextEdit):
         move = 1
         if count == 1/4:
             move = 0
+        if after_for:
+            self.insertPlainText("}")
+            move +=1
         cursor.movePosition(cursor.Left, cursor.MoveAnchor, count * 4 + move)
         self.setTextCursor(cursor)
         return
